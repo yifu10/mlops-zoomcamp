@@ -25,12 +25,21 @@ def run(data_path, num_trials):
 
     def objective(params):
 
-        rf = RandomForestRegressor(**params)
-        rf.fit(X_train, y_train)
-        y_pred = rf.predict(X_valid)
-        rmse = mean_squared_error(y_valid, y_pred, squared=False)
+        with mlflow.start_run():
+            mlflow.set_tag("model", "RandomForestRegressor")
+            mlflow.log_params(params)
+            rf = RandomForestRegressor(**params)
+            rf.fit(X_train, y_train)
 
-        return {'loss': rmse, 'status': STATUS_OK}
+            y_pred_train = rf.predict(X_train)
+            rmse_train = mean_squared_error(y_train,y_pred_train, squared = False)
+            mlflow.log_metric("rmse_train", rmse_train)
+
+            y_pred_valid = rf.predict(X_valid)
+            rmse_valid = mean_squared_error(y_valid, y_pred_valid, squared=False)
+            mlflow.log_metric("rmse_validation",rmse_valid)
+
+        return {'loss': rmse_valid, 'status': STATUS_OK}
 
     search_space = {
         'max_depth': scope.int(hp.quniform('max_depth', 1, 20, 1)),
